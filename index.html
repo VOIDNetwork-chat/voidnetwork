@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VOID NETWORK — Open Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#03020a;
+  --deep:#07060f;
+  --surface:#0d0b1a;
+  --border:#1a1830;
+  --accent:#7c6aff;
+  --accent2:#a78bfa;
+  --hot:#ff6aff;
+  --text:#e8e6ff;
+  --muted:#5a5880;
+  --safe:#4ade80;
+  --danger:#ff6b6b;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--void);
+  color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor{position:fixed;width:10px;height:10px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .1s,opacity .2s;mix-blend-mode:screen}
+#cursor-ring{position:fixed;width:32px;height:32px;border:1px solid #7c6aff55;border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .18s ease;mix-blend-mode:screen}
+body:hover #cursor{opacity:1}
+
+/* ── NOISE OVERLAY ── */
+body::before{
+  content:"";position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:1000;opacity:.45;
+}
+
+/* ── VOID CANVAS ── */
+#void-canvas{position:fixed;inset:0;z-index:0;opacity:.55}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 60px;
+  background:linear-gradient(to bottom,rgba(3,2,10,.95) 0%,transparent 100%);
+  backdrop-filter:blur(0px);
+  transition:all .3s;
+}
+nav.scrolled{background:rgba(3,2,10,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-glyph{font-size:22px;color:var(--accent);line-height:1;filter:drop-shadow(0 0 8px var(--accent))}
+.nav-logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:.12em;color:var(--text)}
+.nav-logo-text span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--accent)}
+.nav-cta{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+  letter-spacing:.12em;text-transform:uppercase;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:6px;padding:9px 22px;cursor:none;
+  text-decoration:none;
+  transition:all .2s;
+  box-shadow:0 0 20px #7c6aff44;
+}
+.nav-cta:hover{background:#9b8bff;box-shadow:0 0 35px #7c6aff88;transform:translateY(-1px)}
+
+/* ── HERO ── */
+#hero{
+  position:relative;z-index:10;
+  min-height:100vh;
+  display:flex;align-items:center;
+  padding:120px 60px 60px;
+  gap:60px;
+}
+.hero-left{flex:1;max-width:580px}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.2em;
+  color:var(--accent);text-transform:uppercase;
+  border:1px solid #7c6aff33;border-radius:20px;
+  padding:5px 14px;margin-bottom:28px;
+  background:#7c6aff0d;
+}
+.hero-tag::before{content:"";width:6px;height:6px;background:var(--safe);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #4ade8066}50%{box-shadow:0 0 0 6px #4ade8000}}
+
+.hero-h1{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(48px,6vw,82px);
+  line-height:.95;letter-spacing:-.02em;
+  margin-bottom:24px;
+}
+.hero-h1 .line1{display:block;color:var(--text)}
+.hero-h1 .line2{display:block;color:transparent;-webkit-text-stroke:1px #7c6aff88}
+.hero-h1 .line3{
+  display:block;
+  background:linear-gradient(135deg,var(--accent),var(--hot));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:17px;line-height:1.7;color:#9896bb;
+  max-width:460px;margin-bottom:40px;font-weight:400;
+}
+.hero-sub strong{color:var(--text);font-weight:600}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn-primary{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:15px;
+  letter-spacing:.06em;
+  background:linear-gradient(135deg,var(--accent),var(--hot));
+  color:#fff;border:none;border-radius:8px;
+  padding:14px 32px;cursor:none;text-decoration:none;
+  transition:all .25s;
+  box-shadow:0 4px 30px #7c6aff44;
+  position:relative;overflow:hidden;
+}
+.btn-primary::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.12));
+  pointer-events:none;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 40px #7c6aff66}
+.btn-secondary{
+  font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.1em;
+  color:var(--muted);background:none;
+  border:1px solid var(--border);border-radius:8px;
+  padding:14px 28px;cursor:none;text-decoration:none;text-transform:uppercase;
+  transition:all .25s;
+}
+.btn-secondary:hover{border-color:#7c6aff55;color:var(--accent)}
+.hero-note{font-family:'Share Tech Mono',monospace;font-size:9px;color:#3a3855;letter-spacing:.12em;margin-top:16px}
+
+/* ── HERO VISUAL ── */
+.hero-right{
+  flex:1;max-width:640px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.app-mockup{
+  width:100%;border-radius:12px;
+  background:#0a0916;
+  border:1px solid #1e1b35;
+  overflow:hidden;
+  box-shadow:0 0 0 1px #7c6aff18,0 40px 120px #7c6aff22,0 0 60px #0003;
+  animation:float 6s ease-in-out infinite;
+  position:relative;z-index:2;
+}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-16px) rotate(.5deg)}}
+.mockup-bar{
+  background:#07060e;padding:10px 14px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid #1a1730;
+}
+.mockup-dots{display:flex;gap:5px}
+.mockup-dots span{width:9px;height:9px;border-radius:50%;display:block}
+.mockup-dots span:nth-child(1){background:#ff5f57}
+.mockup-dots span:nth-child(2){background:#febc2e}
+.mockup-dots span:nth-child(3){background:#28c840}
+.mockup-title{font-family:'Share Tech Mono',monospace;font-size:10px;color:#3a3855;margin-left:auto;margin-right:auto;letter-spacing:.1em}
+.mockup-body{display:flex;height:340px}
+.mockup-sidebar{width:140px;background:#070614;border-right:1px solid #130f28;padding:10px 0;flex-shrink:0;overflow:hidden}
+.mockup-ch{padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:9px;color:#2e2b4a;letter-spacing:.05em}
+.mockup-ch.active{color:#7c6aff;background:#7c6aff11;border-radius:4px;margin:0 4px;padding:4px 6px}
+.mockup-user{display:flex;align-items:center;gap:6px;padding:4px 10px;margin-top:4px}
+.mockup-pip{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mockup-uname{font-family:'Share Tech Mono',monospace;font-size:8px;color:#2e2b4a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mockup-main{flex:1;display:flex;flex-direction:column;padding:12px}
+.mockup-msg{display:flex;gap:7px;margin-bottom:10px;align-items:flex-start}
+.mockup-av{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid}
+.mockup-bubble-wrap{flex:1}
+.mockup-meta{font-family:'Share Tech Mono',monospace;font-size:7.5px;margin-bottom:3px;letter-spacing:.04em}
+.mockup-bub{background:#0d0b1e;border:1px solid #1a1730;border-radius:0 8px 8px 8px;padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:8.5px;color:#9896bb;line-height:1.5;width:fit-content;max-width:100%}
+.mockup-bub.mine{background:#7c6aff18;border-color:#7c6aff33;color:#c4c0ff;margin-left:auto;border-radius:8px 0 8px 8px}
+.mockup-input{
+  background:#0a0916;border:1px solid #1a1730;border-radius:7px;
+  padding:7px 10px;font-family:'Share Tech Mono',monospace;font-size:8px;
+  color:#3a3855;margin-top:auto;display:flex;align-items:center;justify-content:space-between;
+}
+.mockup-cursor{display:inline-block;width:6px;height:11px;background:#7c6aff;animation:blink .9s step-end infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Glow rings behind mockup */
+.hero-glow{
+  position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,#7c6aff18 0%,transparent 70%);
+  filter:blur(60px);pointer-events:none;z-index:1;
+}
+.hero-glow2{
+  position:absolute;width:300px;height:300px;border-radius:50%;top:20%;right:5%;
+  background:radial-gradient(circle,#ff6aff14 0%,transparent 70%);
+  filter:blur(40px);pointer-events:none;z-index:1;
+}
+
+/* ── STATS BAR ── */
+#stats{
+  position:relative;z-index:10;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:linear-gradient(to right,#07060f,#0d0b1a,#07060f);
+  padding:24px 60px;
+  display:flex;align-items:center;justify-content:center;gap:80px;
+  overflow:hidden;
+}
+#stats::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,#7c6aff04 0px,transparent 1px,transparent 40px);
+}
+.stat-item{text-align:center;position:relative;z-index:1}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;
+  background:linear-gradient(135deg,var(--accent),var(--hot));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;
+}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
+.stat-div{width:1px;height:36px;background:var(--border)}
+
+/* ── FEATURES ── */
+#features{
+  position:relative;z-index:10;
+  padding:120px 60px;
+}
+.section-tag{
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.3em;
+  color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:block;
+}
+.section-h2{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(36px,4vw,56px);line-height:1;letter-spacing:-.02em;margin-bottom:14px;
+}
+.section-sub{font-size:15px;color:#9896bb;max-width:500px;line-height:1.7}
+
+.features-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  margin-top:70px;border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  background:var(--border);
+}
+.feat-card{
+  background:var(--deep);padding:36px 32px;
+  position:relative;overflow:hidden;
+  transition:background .3s;
+}
+.feat-card:hover{background:#0c0a1a}
+.feat-card::before{
+  content:"";position:absolute;inset:0;opacity:0;
+  background:radial-gradient(circle at 30% 30%,#7c6aff0a,transparent 60%);
+  transition:opacity .3s;
+}
+.feat-card:hover::before{opacity:1}
+.feat-icon{
+  width:44px;height:44px;border-radius:10px;
+  background:#7c6aff12;border:1px solid #7c6aff22;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:20px;
+  transition:all .3s;
+}
+.feat-card:hover .feat-icon{background:#7c6aff22;box-shadow:0 0 20px #7c6aff33}
+.feat-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:10px}
+.feat-desc{font-size:13px;color:#7a7898;line-height:1.65}
+.feat-tag{
+  display:inline-block;margin-top:14px;
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.1em;
+  color:var(--accent);text-transform:uppercase;opacity:.7;
+}
+
+/* ── GLITCH SECTION ── */
+#void-section{
+  position:relative;z-index:10;
+  padding:120px 60px;
+  text-align:center;
+  overflow:hidden;
+}
+.glitch-wrap{position:relative;display:inline-block;margin-bottom:40px}
+.glitch-text{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(60px,10vw,140px);letter-spacing:-.04em;
+  color:transparent;-webkit-text-stroke:1px #7c6aff44;
+  position:relative;user-select:none;
+}
+.glitch-text::before,.glitch-text::after{
+  content:attr(data-text);position:absolute;inset:0;
+  font-family:'Syne',sans-serif;font-weight:800;
+}
+.glitch-text::before{
+  color:#ff6aff22;clip-path:polygon(0 0,100% 0,100% 35%,0 35%);
+  animation:glitch1 3.5s infinite;
+}
+.glitch-text::after{
+  color:#7c6aff33;clip-path:polygon(0 65%,100% 65%,100% 100%,0 100%);
+  animation:glitch2 4.2s infinite;
+}
+@keyframes glitch1{
+  0%,90%,100%{transform:none}
+  92%{transform:translate(-4px,0) skewX(-2deg)}
+  94%{transform:translate(4px,0) skewX(2deg)}
+  96%{transform:translate(-2px,0)}
+}
+@keyframes glitch2{
+  0%,88%,100%{transform:none}
+  90%{transform:translate(3px,2px) skewX(1deg)}
+  93%{transform:translate(-3px,-2px)}
+  95%{transform:translate(2px,0)}
+}
+.void-desc{font-size:16px;color:#7a7898;max-width:540px;margin:0 auto 48px;line-height:1.8}
+.void-cta-wrap{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+
+/* ── MARQUEE ── */
+.marquee-wrap{
+  position:relative;z-index:10;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:14px 0;overflow:hidden;background:#06050d;
+}
+.marquee-track{
+  display:flex;gap:0;white-space:nowrap;
+  animation:marquee 28s linear infinite;
+}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.marquee-item{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:#2a2845;letter-spacing:.18em;text-transform:uppercase;
+  padding:0 28px;border-right:1px solid #1a1730;
+}
+.marquee-item span{color:#7c6aff55}
+
+/* ── HOW IT WORKS ── */
+#how{
+  position:relative;z-index:10;
+  padding:120px 60px;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+}
+.how-steps{display:flex;flex-direction:column;gap:32px}
+.how-step{display:flex;gap:20px;align-items:flex-start}
+.step-num{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:11px;
+  color:var(--accent);letter-spacing:.2em;
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid #7c6aff44;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+  background:#7c6aff0a;
+}
+.step-content h3{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:6px}
+.step-content p{font-size:13px;color:#7a7898;line-height:1.65}
+
+.terminal{
+  background:#05040e;border:1px solid #1a1730;border-radius:10px;
+  overflow:hidden;box-shadow:0 20px 60px #0007;
+}
+.terminal-bar{
+  background:#08070f;padding:10px 14px;border-bottom:1px solid #130f28;
+  display:flex;align-items:center;gap:8px;
+}
+.terminal-bar .dot{width:9px;height:9px;border-radius:50%}
+.terminal-body{padding:24px;font-family:'Share Tech Mono',monospace;font-size:12px;line-height:1.8}
+.t-line{color:#3a3855;margin-bottom:2px}
+.t-line .t-acc{color:var(--accent)}
+.t-line .t-ok{color:var(--safe)}
+.t-line .t-hot{color:var(--hot)}
+.t-line .t-dim{color:#2a2845}
+.t-cursor-line{display:flex;align-items:center;gap:4px;margin-top:8px}
+.t-prompt{color:#7c6aff66}
+.t-cursor{width:8px;height:14px;background:var(--accent);animation:blink .9s step-end infinite}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:10;
+  border-top:1px solid var(--border);
+  padding:40px 60px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:20px;
+}
+.footer-logo{font-family:'Share Tech Mono',monospace;font-size:11px;color:#2a2845;letter-spacing:.2em}
+.footer-logo span{color:var(--accent)}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a2845;text-decoration:none;letter-spacing:.12em;transition:color .2s}
+.footer-links a:hover{color:var(--accent)}
+.footer-note{font-family:'Share Tech Mono',monospace;font-size:9px;color:#1e1c30;letter-spacing:.1em}
+
+/* ── COMPARISON TABLE ── */
+.compare-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+  max-width:860px;margin:0 auto;
+}
+.compare-header-blank{background:#06050d;padding:18px 24px;border-bottom:1px solid var(--border)}
+.compare-col-header{
+  padding:18px 24px;font-family:'Syne',sans-serif;font-weight:800;
+  font-size:16px;letter-spacing:.05em;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.compare-logo{font-size:20px}
+.discord-header{background:#07070f;color:#7289da}
+.void-header{background:#0d0b1a;color:var(--accent);border-left:1px solid var(--border)}
+.compare-label{
+  background:#06050d;padding:14px 24px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:var(--muted);letter-spacing:.06em;
+  border-bottom:1px solid #0f0d1f;
+  display:flex;align-items:center;
+}
+.compare-cell{
+  padding:14px 24px;font-family:'Rajdhani',sans-serif;
+  font-weight:600;font-size:13px;
+  border-bottom:1px solid #0f0d1f;
+  display:flex;align-items:center;
+}
+.discord-cell{background:#07070f}
+.void-cell{background:#0a0916;border-left:1px solid #0f0d1f}
+.compare-cell.good{color:var(--safe)}
+.compare-cell.bad{color:#f87171}
+.compare-cell.neutral{color:#facc15}
+.compare-grid>*:nth-last-child(-n+3){border-bottom:none}
+
+@media(max-width:900px){
+  #compare{padding:80px 24px}
+  .compare-label{font-size:9px;padding:12px 10px}
+  .compare-cell{font-size:11px;padding:12px 10px}
+  .compare-col-header{font-size:13px;padding:14px 10px}
+}
+
+
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+
+/* ── MOBILE ── */
+@media(max-width:900px){
+  nav{padding:16px 24px}
+  .nav-links{display:none}
+  #hero{flex-direction:column;padding:100px 24px 60px;gap:40px}
+  .hero-right{width:100%}
+  #stats{padding:24px;gap:32px;flex-wrap:wrap}
+  #features{padding:80px 24px}
+  .features-grid{grid-template-columns:1fr}
+  #void-section{padding:80px 24px}
+  #how{padding:80px 24px;grid-template-columns:1fr;gap:40px}
+  footer{padding:32px 24px;flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<canvas id="void-canvas"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="nav-logo" href="#">
+    <span class="nav-logo-glyph">◈</span>
+    <span class="nav-logo-text">VOID <span>NETWORK</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#void-section">The Void</a>
+  </div>
+  <a class="nav-cta" href="chatroom.html">Open App →</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-left">
+    <div class="hero-tag">◉ Live · Open Chat · No Accounts</div>
+    <h1 class="hero-h1">
+      <span class="line1">REAL-TIME</span>
+      <span class="line2">ENCRYPTED</span>
+      <span class="line3">CHAT.</span>
+    </h1>
+    <p class="hero-sub">
+      A <strong>dark, borderless chat room</strong> for people who don't want to hand over their email. No sign-ups. No servers. Just open a tab and you're in.
+    </p>
+    <div class="hero-btns">
+      <a href="chatroom.html" class="btn-primary">Enter the Void →</a>
+      <a href="#features" class="btn-secondary">See Features</a>
+    </div>
+    <p class="hero-note">// No accounts · No tracking · No ads · Just signal</p>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+    <div class="app-mockup reveal">
+      <div class="mockup-bar">
+        <div class="mockup-dots"><span></span><span></span><span></span></div>
+        <span class="mockup-title">◈ VOID NETWORK · #general</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-sidebar">
+          <div class="mockup-ch" style="font-size:7px;color:#2a2845;margin-bottom:6px;letter-spacing:.15em">CHANNELS</div>
+          <div class="mockup-ch active"># general</div>
+          <div class="mockup-ch"># random</div>
+          <div class="mockup-ch"># void</div>
+          <div style="border-top:1px solid #130f28;margin:8px 0"></div>
+          <div class="mockup-ch" style="font-size:7px;color:#2a2845;letter-spacing:.15em;margin-bottom:6px">USERS</div>
+          <div class="mockup-user"><div class="mockup-pip" style="background:#ff6b6b;box-shadow:0 0 4px #ff6b6b"></div><span class="mockup-uname" style="color:#9896bb">CosmicFox</span></div>
+          <div class="mockup-user"><div class="mockup-pip" style="background:#7c6aff;box-shadow:0 0 4px #7c6aff"></div><span class="mockup-uname" style="color:#9896bb">NeonOrbit</span></div>
+          <div class="mockup-user"><div class="mockup-pip" style="background:#4ade80;box-shadow:0 0 4px #4ade80"></div><span class="mockup-uname" style="color:#9896bb">SilentDrift</span></div>
+          <div class="mockup-user"><div class="mockup-pip" style="background:#ff6aff;box-shadow:0 0 4px #ff6aff"></div><span class="mockup-uname" style="color:#9896bb">VoidPrism</span></div>
+        </div>
+        <div class="mockup-main">
+          <div class="mockup-msg">
+            <div class="mockup-av" style="background:#ff6b6b22;border-color:#ff6b6b44;color:#ff6b6b">🦊</div>
+            <div class="mockup-bubble-wrap">
+              <div class="mockup-meta" style="color:#ff6b6b">CosmicFox <span style="color:#2a2845">12:04</span></div>
+              <div class="mockup-bub">anyone else using the new channels?</div>
+            </div>
+          </div>
+          <div class="mockup-msg">
+            <div class="mockup-av" style="background:#7c6aff22;border-color:#7c6aff44;color:#7c6aff">🌙</div>
+            <div class="mockup-bubble-wrap">
+              <div class="mockup-meta" style="color:#7c6aff">NeonOrbit <span style="color:#2a2845">12:05</span></div>
+              <div class="mockup-bub">yeah #void is wild rn</div>
+            </div>
+          </div>
+          <div class="mockup-msg" style="flex-direction:row-reverse">
+            <div class="mockup-av" style="background:#ff6aff22;border-color:#ff6aff44;color:#ff6aff">⚡</div>
+            <div class="mockup-bubble-wrap" style="align-items:flex-end;display:flex;flex-direction:column">
+              <div class="mockup-meta" style="color:#ff6aff;text-align:right">VoidPrism <span style="color:#2a2845">12:05</span></div>
+              <div class="mockup-bub mine">@VoidAI what's the meaning of life?</div>
+            </div>
+          </div>
+          <div class="mockup-msg">
+            <div class="mockup-av" style="background:#a78bfa22;border-color:#a78bfa44;color:#a78bfa;font-size:10px">✦</div>
+            <div class="mockup-bubble-wrap">
+              <div class="mockup-meta" style="color:#a78bfa">Void AI <span style="color:#2a2845">12:05</span></div>
+              <div class="mockup-bub" style="border-color:#a78bfa22;background:#a78bfa08">42, but the real answer is in the void.</div>
+            </div>
+          </div>
+          <div class="mockup-input">
+            <span style="color:#2a2845">Message #general… <span class="mockup-cursor"></span></span>
+            <span style="color:#2a2845">GIF · 💨 · 😊</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stat-item reveal"><div class="stat-val" id="cnt-users">0</div><div class="stat-label">No Sign-ups Needed</div></div>
+  <div class="stat-div"></div>
+  <div class="stat-item reveal reveal-delay-1"><div class="stat-val">E2E</div><div class="stat-label">DM Encryption</div></div>
+  <div class="stat-div"></div>
+  <div class="stat-item reveal reveal-delay-2"><div class="stat-val">∞</div><div class="stat-label">Rooms · Channels</div></div>
+  <div class="stat-div"></div>
+  <div class="stat-item reveal reveal-delay-3"><div class="stat-val">0¢</div><div class="stat-label">Free Forever</div></div>
+</div>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee-track"></div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="reveal">
+    <span class="section-tag">// what's inside</span>
+    <h2 class="section-h2">Built Different.<br>On Purpose.</h2>
+    <p class="section-sub">Everything Discord has, minus the corporation. Plus things Discord will never ship.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feat-card reveal reveal-delay-1">
+      <div class="feat-icon">🔐</div>
+      <div class="feat-title">E2E Encrypted DMs</div>
+      <div class="feat-desc">Direct messages use ECDH P-256 key exchange and AES-GCM encryption. Nobody reads your DMs — not even us, because there is no us.</div>
+      <span class="feat-tag">// ECDH · AES-GCM</span>
+    </div>
+    <div class="feat-card reveal reveal-delay-2">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">Sub-Second Delivery</div>
+      <div class="feat-desc">MQTT over WebSocket with dual-broker failover. Messages hit everyone in the room in under a second. No polling, no refresh.</div>
+      <span class="feat-tag">// MQTT · WebSocket</span>
+    </div>
+    <div class="feat-card reveal reveal-delay-3">
+      <div class="feat-icon">#</div>
+      <div class="feat-title">Named Channels</div>
+      <div class="feat-desc">Create sub-rooms within your room. #general, #void, #random — or anything you name. Admins can add channels on the fly.</div>
+      <span class="feat-tag">// Discord-style</span>
+    </div>
+    <div class="feat-card reveal reveal-delay-1">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">Void AI Built-In</div>
+      <div class="feat-desc">@mention VoidAI in any channel and it responds to the whole room. Or DM it privately. Summarize the entire chat with one click.</div>
+      <span class="feat-tag">// Claude-powered</span>
+    </div>
+    <div class="feat-card reveal reveal-delay-2">
+      <div class="feat-icon">💨</div>
+      <div class="feat-title">Whisper Messages</div>
+      <div class="feat-desc">Self-destructing messages that vanish 10 seconds after the recipient reads them. No trace, no logs.</div>
+      <span class="feat-tag">// self-destruct</span>
+    </div>
+    <div class="feat-card reveal reveal-delay-3">
+      <div class="feat-icon">⚙</div>
+      <div class="feat-title">Role-Based Admin</div>
+      <div class="feat-desc">Full admin panel with granular role permissions — MODs, DEVs, Co-Admin, and even Brain Rot. Temp ban with a countdown timer.</div>
+      <span class="feat-tag">// permissions</span>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="compare" style="position:relative;z-index:10;padding:120px 60px">
+  <div class="reveal" style="text-align:center;margin-bottom:70px">
+    <span class="section-tag" style="display:block;text-align:center">// the honest truth</span>
+    <h2 class="section-h2" style="text-align:center">VOID vs. Discord</h2>
+    <p style="font-size:15px;color:#9896bb;margin:14px auto 0;max-width:480px;line-height:1.7">We're not trying to replace Discord. We're the thing you use when you don't want Discord watching.</p>
+  </div>
+
+  <div class="compare-grid reveal">
+    <!-- Header -->
+    <div class="compare-header-blank"></div>
+    <div class="compare-col-header discord-header">
+      <span class="compare-logo">⬡</span> Discord
+    </div>
+    <div class="compare-col-header void-header">
+      <span class="compare-logo">◈</span> VOID NETWORK
+    </div>
+
+    <!-- Rows -->
+    <div class="compare-label">Account required</div>
+    <div class="compare-cell discord-cell bad">✕ Required</div>
+    <div class="compare-cell void-cell good">✔ Never</div>
+
+    <div class="compare-label">Stores your messages</div>
+    <div class="compare-cell discord-cell bad">✕ Forever</div>
+    <div class="compare-cell void-cell good">✔ Never</div>
+
+    <div class="compare-label">DM encryption</div>
+    <div class="compare-cell discord-cell bad">✕ Not E2E</div>
+    <div class="compare-cell void-cell good">✔ ECDH E2E</div>
+
+    <div class="compare-label">Sells your data</div>
+    <div class="compare-cell discord-cell bad">✕ Yes</div>
+    <div class="compare-cell void-cell good">✔ No data to sell</div>
+
+    <div class="compare-label">Ads</div>
+    <div class="compare-cell discord-cell bad">✕ Everywhere</div>
+    <div class="compare-cell void-cell good">✔ Zero</div>
+
+    <div class="compare-label">Needs an app/install</div>
+    <div class="compare-cell discord-cell bad">✕ Yes</div>
+    <div class="compare-cell void-cell good">✔ Just a browser</div>
+
+    <div class="compare-label">Built-in AI</div>
+    <div class="compare-cell discord-cell neutral">~ Clyde (limited)</div>
+    <div class="compare-cell void-cell good">✔ Void AI</div>
+
+    <div class="compare-label">Self-destructing messages</div>
+    <div class="compare-cell discord-cell bad">✕ No</div>
+    <div class="compare-cell void-cell good">✔ Whisper mode</div>
+
+    <div class="compare-label">Channels</div>
+    <div class="compare-cell discord-cell good">✔ Yes</div>
+    <div class="compare-cell void-cell good">✔ Yes</div>
+
+    <div class="compare-label">Reactions & GIFs</div>
+    <div class="compare-cell discord-cell good">✔ Yes</div>
+    <div class="compare-cell void-cell good">✔ Yes</div>
+
+    <div class="compare-label">Cost</div>
+    <div class="compare-cell discord-cell neutral">~ Free / $10 Nitro</div>
+    <div class="compare-cell void-cell good">✔ Free. Always.</div>
+  </div>
+
+  <p class="reveal" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a2845;letter-spacing:.12em;margin-top:40px">// discord is a great product. this is just a different one.</p>
+</section>
+
+<!-- GLITCH HERO -->
+<section id="void-section">
+  <div class="glitch-wrap reveal">
+    <div class="glitch-text" data-text="THE VOID">THE VOID</div>
+  </div>
+  <p class="void-desc reveal reveal-delay-1">
+    A space that doesn't remember you. No profile. No history. No algorithm deciding what you see. Just people, talking, in real time — then gone.
+  </p>
+  <div class="void-cta-wrap reveal reveal-delay-2">
+    <a href="chatroom.html" class="btn-primary">Enter Now →</a>
+  </div>
+</section>
+
+<!-- MARQUEE 2 -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee-track2" style="animation-direction:reverse"></div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div>
+    <span class="section-tag reveal">// getting started</span>
+    <h2 class="section-h2 reveal">Zero setup.<br>Just open<br>and talk.</h2>
+    <div class="how-steps" style="margin-top:48px">
+      <div class="how-step reveal reveal-delay-1">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>Open the app</h3>
+          <p>No download. No sign-up. No email. Open the link and you're assigned a random name and color instantly.</p>
+        </div>
+      </div>
+      <div class="how-step reveal reveal-delay-2">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Pick your room</h3>
+          <p>Click the room name to enter any room. Share the room name with friends and everyone lands in the same space.</p>
+        </div>
+      </div>
+      <div class="how-step reveal reveal-delay-3">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>Make it yours</h3>
+          <p>Edit your profile, pick an emoji avatar, set a status, choose your color. Everything saves locally — no account needed.</p>
+        </div>
+      </div>
+      <div class="how-step reveal reveal-delay-4">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3>Stay as long as you want</h3>
+          <p>DM friends, react to messages, summon the AI, drop GIFs. Or just lurk. The void doesn't judge.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="terminal reveal">
+    <div class="terminal-bar">
+      <div class="dot" style="background:#ff5f57"></div>
+      <div class="dot" style="background:#febc2e"></div>
+      <div class="dot" style="background:#28c840"></div>
+    </div>
+    <div class="terminal-body">
+      <div class="t-line"><span class="t-dim">// connecting to void…</span></div>
+      <div class="t-line t-acc">◈ VOID NETWORK v2.6</div>
+      <div class="t-line">&nbsp;</div>
+      <div class="t-line"><span class="t-dim">broker </span><span class="t-ok">connected</span><span class="t-dim"> · hivemq</span></div>
+      <div class="t-line"><span class="t-dim">session </span><span class="t-acc">a9f2c8b1…</span><span class="t-dim"> (tab-unique)</span></div>
+      <div class="t-line"><span class="t-dim">identity </span><span class="t-hot">CosmicFox</span></div>
+      <div class="t-line"><span class="t-dim">channel </span><span class="t-acc">#general</span></div>
+      <div class="t-line">&nbsp;</div>
+      <div class="t-line"><span class="t-dim">presence </span><span class="t-ok">announced</span></div>
+      <div class="t-line"><span class="t-dim">e2e keys </span><span class="t-ok">generated</span></div>
+      <div class="t-line"><span class="t-dim">room </span><span class="t-ok">subscribed</span></div>
+      <div class="t-line">&nbsp;</div>
+      <div class="t-line"><span class="t-ok">✔ ready</span><span class="t-dim"> · 4 online</span></div>
+      <div class="t-line">&nbsp;</div>
+      <div class="t-cursor-line">
+        <span class="t-prompt">›</span>
+        <div class="t-cursor"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">◈ VOID <span>NETWORK</span> · open chat</div>
+  <div class="footer-links">
+    <a href="chatroom.html">Launch App</a>
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+  </div>
+  <div class="footer-note">// no servers were harmed · no data was stored</div>
+</footer>
+
+<script>
+// ── CURSOR ──
+const cursor=document.getElementById("cursor"),ring=document.getElementById("cursor-ring");
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+"px";cursor.style.top=my+"px";});
+function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+"px";ring.style.top=ry+"px";requestAnimationFrame(animRing);}
+animRing();
+document.querySelectorAll("a,button").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{cursor.style.transform="translate(-50%,-50%) scale(2.5)";ring.style.transform="translate(-50%,-50%) scale(1.4)";ring.style.borderColor="#7c6aff99";});
+  el.addEventListener("mouseleave",()=>{cursor.style.transform="translate(-50%,-50%) scale(1)";ring.style.transform="translate(-50%,-50%) scale(1)";ring.style.borderColor="#7c6aff55";});
+});
+
+// ── VOID PARTICLE CANVAS ──
+const canvas=document.getElementById("void-canvas");
+const ctx=canvas.getContext("2d");
+let W=canvas.width=window.innerWidth,H=canvas.height=window.innerHeight;
+window.addEventListener("resize",()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;});
+const STARS=[];
+for(let i=0;i<220;i++){
+  STARS.push({
+    x:Math.random()*W,y:Math.random()*H,
+    r:Math.random()*1.4+.2,
+    vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12,
+    a:Math.random(),da:Math.random()*.008+.002,
+    col:Math.random()<.3?"rgba(124,106,255,":`rgba(${Math.round(180+Math.random()*60)},${Math.round(170+Math.random()*60)},${Math.round(220+Math.random()*35)},`,
+  });
+}
+function drawCanvas(){
+  ctx.clearRect(0,0,W,H);
+  STARS.forEach(s=>{
+    s.x+=s.vx;s.y+=s.vy;s.a+=s.da;
+    if(s.a>1||s.a<0)s.da*=-1;
+    if(s.x<0)s.x=W;if(s.x>W)s.x=0;
+    if(s.y<0)s.y=H;if(s.y>H)s.y=0;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=s.col+s.a+")";ctx.fill();
+  });
+  // Slow nebula blobs
+  const t=Date.now()/8000;
+  [[.3,.25,"rgba(124,106,255,",.05],[.7,.6,"rgba(255,106,255,",.03],[.15,.75,"rgba(74,222,128,",.025]].forEach(([bx,by,bc,ba])=>{
+    const gx=bx*W+Math.sin(t+bx*10)*W*.06,gy=by*H+Math.cos(t+by*10)*H*.06;
+    const g=ctx.createRadialGradient(gx,gy,0,gx,gy,W*.22);
+    g.addColorStop(0,bc+ba+")");g.addColorStop(1,"transparent");
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  });
+  requestAnimationFrame(drawCanvas);
+}
+drawCanvas();
+
+// ── NAV SCROLL ──
+window.addEventListener("scroll",()=>document.getElementById("navbar").classList.toggle("scrolled",scrollY>40));
+
+// ── SCROLL REVEAL ──
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add("visible");});},{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>obs.observe(el));
+
+// ── COUNTER ANIM ──
+function countUp(el,target,dur=1800){
+  let start=null;
+  const step=ts=>{
+    if(!start)start=ts;
+    const p=Math.min((ts-start)/dur,1);
+    el.textContent=Math.round(p*target).toLocaleString()+(target>=1000?"+":"");
+    if(p<1)requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const statsObs=new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting){countUp(document.getElementById("cnt-users"),0);statsObs.disconnect();}
+},{threshold:.5});
+statsObs.observe(document.getElementById("stats"));
+
+// ── MARQUEE ──
+const items=["Real-time chat","E2E encryption","No sign-up","Void AI","Whisper messages","Named channels","Role permissions","Emoji avatars","GIF sharing","Live reactions","Polls & trivia","Notification sounds","Friend system","Temp bans","Co-Admin","Brain Rotted 🧠"];
+function fillMarquee(id){
+  const el=document.getElementById(id);
+  const doubled=[...items,...items];
+  el.innerHTML=doubled.map(t=>`<span class="marquee-item"><span>◈</span> ${t}</span>`).join("");
+}
+fillMarquee("marquee-track");
+fillMarquee("marquee-track2");
+</script>
+</body>
+</html>
